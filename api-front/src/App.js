@@ -3,49 +3,54 @@ import './App.css';
 
 function App() {
   const [tooted, setTooted] = useState([]);
-  const idRef = useRef();
   const nameRef = useRef();
-  const priceRef = useRef();
+  const priceRef = useRef(); 
+  const [valuut, setvaluut] = useState("euro"); 
   const isActiveRef = useRef();
 
-
   useEffect(() => {
-    fetch("https://localhost:7047/tooted")
+    fetch("https://localhost:7047/tooted") 
       .then(res => res.json())
       .then(json => setTooted(json));
   }, []);
 
   function kustuta(index) {
-    fetch("https://localhost:7047/tooted/kustuta/" + index, {"method": "DELETE"})
-      .then(res => res.json())
-      .then(json => setTooted(json));
+    setTimeout(() => { 
+      fetch("https://localhost:7047/tooted/kustuta/" + index, {"method": "DELETE"}) 
+        .then(res => res.json())
+        .then(json => setTooted(json));
+    }, 1000);
   }
 
-  ////////////////////////
-  function lisa() {
-    const uusToode = {
-      "id": Number(idRef.current.value),
-      "name": nameRef.current.value,
-      "price": Number(priceRef.current.value),
-      "isActive": isActiveRef.current.checked
-    }
-    fetch("https://localhost:7047/tooted/lisa", {"method": "POST", "body": JSON.stringify(uusToode)})
+  function lisa() {                                          
+    fetch(`https://localhost:7047/tooted/lisa/${nameRef.current.value}/        
+        ${Number(priceRef.current.value)}/${isActiveRef.current.checked}`, {"method": "POST"})
       .then(res => res.json())
       .then(json => setTooted(json));
   }
-  ////////////////////////
 
   function dollariteks() {
-    const kurss = 1.1;
-    fetch("https://localhost:7047/tooted/hind-dollaritesse/" + kurss, {"method": "PATCH"})
-      .then(res => res.json())
-      .then(json => setTooted(json));
+    setvaluut(prevValuut => (prevValuut === "euro" ? "dollar" : "euro"));
   }
 
-  return (
+  async function makePayment(sum, id) { 
+    try {
+      const response = await fetch(`https://localhost:7047/Payment/${sum}/${id}`);
+      if (response.ok) {
+        let paymentLink = await response.text();
+        paymentLink = paymentLink.replace(/^"|"$/g, '');
+        window.open(paymentLink, '_blank');
+      } else {
+        console.error('Payment failed.');
+      }
+    } catch (error) {
+      console.error('Error making payment:', error);
+    }
+  }
+  
+  return(
     <div className="App">
-      <label>ID</label> <br />
-      <input ref={idRef} type="number" /> <br />
+      <div className="input">
       <label>Nimi</label> <br />
       <input ref={nameRef} type="text" /> <br />
       <label>Hind</label> <br />
@@ -53,16 +58,36 @@ function App() {
       <label>Aktiivne</label> <br />
       <input ref={isActiveRef} type="checkbox" /> <br />
       <button onClick={() => lisa()}>Lisa</button>
-      {tooted.map((toode, index) => 
-        <div key={toode.id}>
-          <div>{toode.id}</div>
-          <div>{toode.name}</div>
-          <div>{toode.price.toFixed(2)}</div>
-          <button onClick={() => kustuta(index)}>x</button>
-        </div>
-      )}
-      <button onClick={() => dollariteks()}>Muuda dollariteks</button>
+      </div>
+      <table>
+        <thead>
+          <th>ID</th>
+          <th>Nimi</th>
+          <th>Hind</th>
+          <th>Kustuta</th>
+          <th>Maksma</th>
+          <th>Dollariteks</th>
+        </thead>
+        <tbody>
+          {tooted
+            .filter((toode) => toode.isActive === true)
+            .map((toode) => (
+              <tr key={toode.id}>
+                <td>{toode.id}</td>
+                <td>{toode.name}</td>
+                <td>
+                  {valuut === "euro" ? "€" : "$"}
+                  {Math.round(toode.price * (valuut === "euro" ? 1 : 1.05) * 100) / 100}
+                </td>
+                <td><button onClick={() => kustuta(toode.id)}>Kustuta</button></td>
+                <td><button onClick={() => makePayment(toode.price, toode.id) && kustuta(toode.id)}>Maksma</button></td>
+                <td><button onClick={() => dollariteks()}>Muuda dollariteks</button></td>
+              </tr>
+            ))}
+        </tbody>
+      </table>
     </div>
+    
   );
 }
 
