@@ -5,6 +5,7 @@ function App() {
   const [tooted, setTooted] = useState([]);
   const nameRef = useRef();
   const priceRef = useRef(); 
+  const kogusRef = useRef();
   const [valuut, setvaluut] = useState("euro"); 
   const isActiveRef = useRef();
 
@@ -24,7 +25,7 @@ function App() {
 
   function lisa() {                                          
     fetch(`https://localhost:7047/tooted/lisa/${nameRef.current.value}/        
-        ${Number(priceRef.current.value)}/${isActiveRef.current.checked}`, {"method": "POST"})
+        ${Number(priceRef.current.value)}/${isActiveRef.current.checked}/${kogusRef.current.value}`, {"method": "POST"})
       .then(res => res.json())
       .then(json => setTooted(json));
   }
@@ -55,6 +56,8 @@ function App() {
       <input ref={nameRef} type="text" /> <br />
       <label>Hind</label> <br />
       <input ref={priceRef} type="number" /> <br />
+      <label>Kogus</label> <br />
+      <input ref={kogusRef} type="number" /> <br />
       <label>Aktiivne</label> <br />
       <input ref={isActiveRef} type="checkbox" /> <br />
       <button onClick={() => lisa()}>Lisa</button>
@@ -64,6 +67,7 @@ function App() {
           <th>ID</th>
           <th>Nimi</th>
           <th>Hind</th>
+          <th>Kogus</th>
           <th>Kustuta</th>
           <th>Maksma</th>
           <th>Dollariteks</th>
@@ -76,12 +80,13 @@ function App() {
                 <td>{toode.id}</td>
                 <td>{toode.name}</td>
                 <td>
-                  {valuut === "euro" ? "€" : "$"}
                   {Math.round(toode.price * (valuut === "euro" ? 1 : 1.05) * 100) / 100}
+                  {valuut === "euro" ? "€" : "$"}
                 </td>
-                <td><button onClick={() => kustuta(toode.id)}>Kustuta</button></td>
-                <td><button onClick={() => makePayment(toode.price, toode.id) && kustuta(toode.id)}>Maksma</button></td>
-                <td><button onClick={() => dollariteks()}>Muuda dollariteks</button></td>
+                <td>{toode.kogus}</td>
+                <td><button onClick={() => kustuta(toode.id)}>X</button></td>
+                <td><button onClick={() => makePayment(toode.price, toode.id)}><i class="fa fa-credit-card"/></button></td>
+                <td><button onClick={() => dollariteks()}>Muuda</button></td>
               </tr>
             ))}
         </tbody>
